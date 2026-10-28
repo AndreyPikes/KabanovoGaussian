@@ -4,6 +4,11 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Camera))]
 public class MapCameraController : MonoBehaviour
 {
+    [Header("Настройки объектов")]
+    [SerializeField] private LayerMask interactableLayer; // Слой, на котором висят SelectableObject
+
+    private ObjectPlacementHandler objectPlacementModule;
+
     [Header("Настройки ввода")]
     [SerializeField] private InputAction mouseClickAction;
     [SerializeField] private InputAction mousePositionAction;
@@ -78,10 +83,12 @@ public class MapCameraController : MonoBehaviour
         targetPosition = transform.position;
         targetRotationY = transform.rotation.eulerAngles.y;
 
-        // Инициализируем подсистемы
         movementModule = new CameraMovement(cam, groundLayer);
         rotationModule = new CameraRotation(cam, groundLayer);
         zoomModule = new CameraZoom(cam, targetPosition.y);
+
+        // ИНИЦИАЛИЗАЦИЯ: Новый модуль для объектов
+        objectPlacementModule = new ObjectPlacementHandler(cam, interactableLayer, groundLayer);
 
         lastFrameOrthoMode = isOrthographicMode;
         ApplyCameraProjection(isOrthographicMode);
@@ -90,13 +97,25 @@ public class MapCameraController : MonoBehaviour
         transform.rotation = targetRotation;
     }
 
+
     void Update()
     {
         if (isOrthographicMode != lastFrameOrthoMode) SetOrthographicMode(isOrthographicMode);
 
         HandleZoom();
         HandleRotation();
-        HandleMouseDrag();
+
+        // Если мы тащим объект, обрабатываем его перемещение
+        if (objectPlacementModule.IsDraggingObject)
+        {
+            objectPlacementModule.DragObject(mousePositionAction.ReadValue<Vector2>());
+        }
+        else
+        {
+            // Иначе двигаем саму камеру
+            HandleMouseDrag();
+        }
+
         SmoothMove();
     }
 
@@ -104,17 +123,29 @@ public class MapCameraController : MonoBehaviour
     {
         if (isRotating) return;
 
-        // Синхронизируем цели, чтобы избежать желе и прыжков геометрии
+        Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
+
+        // 1. Проверяем, пытаемся ли мы перетащить объект с зажатым Ctrl
+        if (objectPlacementModule.TryStartDrag(mousePos))
+        {
+            isDragging = false; // Отключаем drag камеры
+            return;
+        }
+
+        // 2. Если Ctrl не зажат, двигаем саму камеру (старый рабочий код)
         targetPosition = transform.position;
         targetRotation = transform.rotation;
         targetRotationY = transform.rotation.eulerAngles.y;
 
-        // Включаем флаг: в следующем кадре мы обновим точку привязки под мышиным курсором
         skipFirstDragFrame = true;
         isDragging = true;
     }
 
-    private void OnDragCanceled(InputAction.CallbackContext context) => isDragging = false;
+    private void OnDragCanceled(InputAction.CallbackContext context)
+    {
+        isDragging = false;
+        objectPlacementModule.StopDrag(); // Всегда сбрасываем перенос объекта при отпускании мыши
+    }
 
     private void OnRotationStarted(InputAction.CallbackContext context)
     {

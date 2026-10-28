@@ -269,6 +269,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8acd484d88f16480fa5bd4e1a1a8a9ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  interactableLayer:
+    serializedVersion: 2
+    m_Bits: 128
   mouseClickAction:
     m_Name: Mouse Click
     m_Type: 0
@@ -354,6 +357,8 @@ MonoBehaviour:
       m_Action: Mouse Delta
       m_Flags: 0
     m_Flags: 0
+  isOrthographicMode: 0
+  orthoZoomSpeed: 5
   smoothness: 20
   rotationSpeed: 8
   rotationSmoothness: 10
@@ -913,7 +918,7 @@ GameObject:
   - component: {fileID: 723498346}
   - component: {fileID: 723498345}
   - component: {fileID: 723498348}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1195,7 +1200,7 @@ MonoBehaviour:
   descriptionText: {fileID: 527413372}
   interactableLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 128
 --- !u!4 &1219662512
 Transform:
   m_ObjectHideFlags: 0
@@ -1224,7 +1229,7 @@ GameObject:
   - component: {fileID: 1251905575}
   - component: {fileID: 1251905574}
   - component: {fileID: 1251905577}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1789,7 +1794,7 @@ GameObject:
   - component: {fileID: 1801556215}
   - component: {fileID: 1801556214}
   - component: {fileID: 1801556217}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2178,7 +2183,7 @@ GameObject:
   - component: {fileID: 1885257392}
   - component: {fileID: 1885257391}
   - component: {fileID: 1885257394}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Cube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
