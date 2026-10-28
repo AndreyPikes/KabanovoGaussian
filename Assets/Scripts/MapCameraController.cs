@@ -1,55 +1,58 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Camera))]
 public class MapCameraController : MonoBehaviour
 {
-    [Header("РќР°СЃС‚СЂРѕР№РєРё РІРІРѕРґР°")]
+    [Header("Настройки ввода")]
     [SerializeField] private InputAction mouseClickAction;
     [SerializeField] private InputAction mousePositionAction;
     [SerializeField] private InputAction mouseScrollAction;
     [SerializeField] private InputAction rotateClickAction;
     [SerializeField] private InputAction mouseDeltaAction;
 
-    [Header("РќР°СЃС‚СЂРѕР№РєРё РґРІРёР¶РµРЅРёСЏ")]
+    [Header("Режим отображения")]
+    [SerializeField] private bool isOrthographicMode = false;
+    [SerializeField] private float orthoZoomSpeed = 5f;
+
+    [Header("Настройки движения")]
     [SerializeField] private float smoothness = 10f;
 
-    [Header("РќР°СЃС‚СЂРѕР№РєРё РїРѕРІРѕСЂРѕС‚Р°")]
-    [SerializeField] private float rotationSpeed = 0.2f;
+    [Header("Настройки поворота")]
+    [SerializeField] private float rotationSpeed = 15f;
     [SerializeField] private float rotationSmoothness = 5f;
 
-    [Header("РќР°СЃС‚СЂРѕР№РєРё Р·СѓРјР°")]
-    [SerializeField] private float zoomSpeed = 15f; // РќРµРјРЅРѕРіРѕ СѓРІРµР»РёС‡РёР»Рё РґР»СЏ РѕС‚Р·С‹РІС‡РёРІРѕСЃС‚Рё РїР»Р°РІРЅРѕРіРѕ Р·СѓРјР°
-    [SerializeField] private float zoomSmoothness = 10f; // РџР»Р°РІРЅРѕСЃС‚СЊ РїСЂРёР±Р»РёР¶РµРЅРёСЏ
+    [Header("Настройки зума")]
+    [SerializeField] private float zoomSpeed = 15f;
+    [SerializeField] private float zoomSmoothness = 10f;
     [SerializeField] private float minHeight = 5f;
     [SerializeField] private float maxHeight = 50f;
     [SerializeField] private LayerMask groundLayer;
 
-    [Header("РћРіСЂР°РЅРёС‡РµРЅРёСЏ РїРѕ РѕСЃСЏРј X/Z")]
+    [Header("Ограничения по осям X/Z")]
     [SerializeField] private Vector2 minBounds;
     [SerializeField] private Vector2 maxBounds;
 
     private Vector3 targetPosition;
     private Quaternion targetRotation;
     private float targetRotationY;
-    private float targetHeight; // Р¦РµР»РµРІР°СЏ РІС‹СЃРѕС‚Р° РґР»СЏ РїР»Р°РІРЅРѕРіРѕ Р·СѓРјР°
 
-    private Vector3 dragStartWorldPos;
-    private Vector3 fixedRotationPivot;
     private bool isDragging;
     private bool isRotating;
     private Camera cam;
+    private bool lastFrameOrthoMode;
+    private bool skipFirstDragFrame;
+
+    // Ссылки на подмодули логики
+    private CameraMovement movementModule;
+    private CameraRotation rotationModule;
+    private CameraZoom zoomModule;
 
     private void OnEnable()
     {
-        mouseClickAction.Enable();
-        mousePositionAction.Enable();
-        mouseScrollAction.Enable();
-        rotateClickAction.Enable();
-        mouseDeltaAction.Enable();
-
+        ToggleActions(true);
         mouseClickAction.started += OnDragStarted;
         mouseClickAction.canceled += OnDragCanceled;
-
         rotateClickAction.started += OnRotationStarted;
         rotateClickAction.canceled += OnRotationCanceled;
     }
@@ -58,31 +61,39 @@ public class MapCameraController : MonoBehaviour
     {
         mouseClickAction.started -= OnDragStarted;
         mouseClickAction.canceled -= OnDragCanceled;
-
         rotateClickAction.started -= OnRotationStarted;
         rotateClickAction.canceled -= OnRotationCanceled;
+        ToggleActions(false);
+    }
 
-        mouseClickAction.Disable();
-        mousePositionAction.Disable();
-        mouseScrollAction.Disable();
-        rotateClickAction.Disable();
-        mouseDeltaAction.Disable();
+    private void ToggleActions(bool enable)
+    {
+        if (enable) { mouseClickAction.Enable(); mousePositionAction.Enable(); mouseScrollAction.Enable(); rotateClickAction.Enable(); mouseDeltaAction.Enable(); }
+        else { mouseClickAction.Disable(); mousePositionAction.Disable(); mouseScrollAction.Disable(); rotateClickAction.Disable(); mouseDeltaAction.Disable(); }
     }
 
     void Start()
     {
         cam = GetComponent<Camera>();
         targetPosition = transform.position;
-        targetHeight = targetPosition.y; // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј С†РµР»РµРІСѓСЋ РІС‹СЃРѕС‚Сѓ
         targetRotationY = transform.rotation.eulerAngles.y;
-        targetRotation = Quaternion.Euler(45f, targetRotationY, 0f);
 
+        // Инициализируем подсистемы
+        movementModule = new CameraMovement(cam, groundLayer);
+        rotationModule = new CameraRotation(cam, groundLayer);
+        zoomModule = new CameraZoom(cam, targetPosition.y);
+
+        lastFrameOrthoMode = isOrthographicMode;
+        ApplyCameraProjection(isOrthographicMode);
+
+        targetRotation = Quaternion.Euler(isOrthographicMode ? 90f : 45f, targetRotationY, 0f);
         transform.rotation = targetRotation;
     }
 
-    // Р’РђР–РќРћ: РџРµСЂРµРЅРµСЃР»Рё РІ Update РґР»СЏ РїР»Р°РІРЅРѕР№ РѕР±СЂР°Р±РѕС‚РєРё РјС‹С€Рё Рё Input System
     void Update()
     {
+        if (isOrthographicMode != lastFrameOrthoMode) SetOrthographicMode(isOrthographicMode);
+
         HandleZoom();
         HandleRotation();
         HandleMouseDrag();
@@ -93,45 +104,26 @@ public class MapCameraController : MonoBehaviour
     {
         if (isRotating) return;
 
-        Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
-        Ray ray = cam.ScreenPointToRay(mousePos);
+        // Синхронизируем цели, чтобы избежать желе и прыжков геометрии
+        targetPosition = transform.position;
+        targetRotation = transform.rotation;
+        targetRotationY = transform.rotation.eulerAngles.y;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))
-        {
-            isDragging = true;
-            dragStartWorldPos = hit.point;
-        }
+        // Включаем флаг: в следующем кадре мы обновим точку привязки под мышиным курсором
+        skipFirstDragFrame = true;
+        isDragging = true;
     }
 
-    private void OnDragCanceled(InputAction.CallbackContext context)
-    {
-        isDragging = false;
-    }
+    private void OnDragCanceled(InputAction.CallbackContext context) => isDragging = false;
 
     private void OnRotationStarted(InputAction.CallbackContext context)
     {
         isRotating = true;
         isDragging = false;
-
-        Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (Physics.Raycast(centerRay, out RaycastHit hit, Mathf.Infinity, groundLayer))
-        {
-            fixedRotationPivot = hit.point;
-        }
-        else
-        {
-            Plane plane = new Plane(Vector3.up, Vector3.zero);
-            if (plane.Raycast(centerRay, out float enter))
-            {
-                fixedRotationPivot = centerRay.GetPoint(enter);
-            }
-        }
+        rotationModule.LockPivot();
     }
 
-    private void OnRotationCanceled(InputAction.CallbackContext context)
-    {
-        isRotating = false;
-    }
+    private void OnRotationCanceled(InputAction.CallbackContext context) => isRotating = false;
 
     private void HandleMouseDrag()
     {
@@ -139,89 +131,47 @@ public class MapCameraController : MonoBehaviour
 
         Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
 
-        Matrix4x4 cameraTargetMatrix = Matrix4x4.TRS(targetPosition, targetRotation, transform.localScale);
-        Vector3 localRayStart = cam.transform.InverseTransformPoint(cam.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, cam.nearClipPlane)));
-        Vector3 localRayDir = cam.transform.InverseTransformDirection(cam.ScreenPointToRay(mousePos).direction);
-
-        Vector3 rayStart = cameraTargetMatrix.MultiplyPoint3x4(localRayStart);
-        Vector3 rayDir = cameraTargetMatrix.MultiplyVector(localRayDir);
-
-        Plane groundPlane = new Plane(Vector3.up, dragStartWorldPos);
-        Ray ray = new Ray(rayStart, rayDir);
-
-        if (groundPlane.Raycast(ray, out float enter))
+        // ИСПРАВЛЕНИЕ: Защита от потери фокуса. 
+        // В самый первый кадр после клика мы не двигаем камеру, а лишь фиксируем 
+        // ТОЧНЫЕ и уже обновленные координаты мыши на земле.
+        if (skipFirstDragFrame)
         {
-            Vector3 currentMouseWorldPos = ray.GetPoint(enter);
-            Vector3 difference = dragStartWorldPos - currentMouseWorldPos;
-
-            targetPosition.x += difference.x;
-            targetPosition.z += difference.z;
-
-            ClampPosition();
+            movementModule.StartDrag(mousePos);
+            skipFirstDragFrame = false;
+            return; // Пропускаем расчет дельты в этом кадре
         }
+
+        // Во всех последующих кадрах drag работает в штатном режиме
+        Vector3 delta = movementModule.CalculateDragDelta(mousePos, targetPosition, targetRotation);
+
+        targetPosition.x += delta.x;
+        targetPosition.z += delta.z;
+        ClampPosition();
     }
+
 
     private void HandleRotation()
     {
         if (!isRotating) return;
 
-        Vector2 mouseDelta = mouseDeltaAction.ReadValue<Vector2>();
-        if (mouseDelta.x == 0) return;
-
-        // 1. Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РёР·РјРµРЅРµРЅРёРµ СѓРіР»Р°, СѓРјРЅРѕР¶Р°СЏ РЅР° Time.deltaTime РґР»СЏ РЅРµР·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ FPS.
-        // РЈРІРµР»РёС‡СЊС‚Рµ Р±Р°Р·РѕРІС‹Р№ rotationSpeed РІ РёРЅСЃРїРµРєС‚РѕСЂРµ (РЅР°РїСЂРёРјРµСЂ, РґРѕ 10-20), С‚Р°Рє РєР°Рє deltaTime СѓРјРµРЅСЊС€РёС‚ Р·РЅР°С‡РµРЅРёРµ.
-        float angleDelta = mouseDelta.x * rotationSpeed * Time.deltaTime;
-
-        targetRotationY += angleDelta;
-        targetRotation = Quaternion.Euler(45f, targetRotationY, 0f);
-
-        // 2. РџРѕРІРѕСЂР°С‡РёРІР°РµРј С†РµР»РµРІСѓСЋ РїРѕР·РёС†РёСЋ РІРѕРєСЂСѓРі СЃС‚Р°С‚РёС‡РЅРѕРіРѕ РїРёРІРѕС‚Р°
-        targetPosition = fixedRotationPivot + Quaternion.Euler(0f, angleDelta, 0f) * (targetPosition - fixedRotationPivot);
-
+        float mouseDeltaX = mouseDeltaAction.ReadValue<Vector2>().x;
+        rotationModule.CalculateRotation(mouseDeltaX, rotationSpeed, ref targetRotationY, ref targetRotation, ref targetPosition, isOrthographicMode);
         ClampPosition();
     }
 
     private void HandleZoom()
     {
-        Vector2 scrollValue = mouseScrollAction.ReadValue<Vector2>();
+        float scrollY = mouseScrollAction.ReadValue<Vector2>().y;
+        zoomModule.AddZoomInput(scrollY, isOrthographicMode, zoomSpeed, orthoZoomSpeed, minHeight, maxHeight);
+        zoomModule.ExecuteZoom(ref targetPosition, targetRotation, isOrthographicMode, zoomSmoothness, minHeight, maxHeight);
 
-        // 1. РР·РјРµРЅСЏРµРј С†РµР»РµРІСѓСЋ РІС‹СЃРѕС‚Сѓ
-        if (scrollValue.y != 0)
-        {
-            float zoomDirection = -Mathf.Sign(scrollValue.y);
-            targetHeight += zoomDirection * zoomSpeed;
-            targetHeight = Mathf.Clamp(targetHeight, minHeight, maxHeight);
-        }
-
-        // 2. РџР»Р°РІРЅРѕ РёРЅС‚РµСЂРїРѕР»РёСЂСѓРµРј РІС‹СЃРѕС‚Сѓ
-        float newHeight = Mathf.Lerp(targetPosition.y, targetHeight, Time.deltaTime * zoomSmoothness);
-
-        // 3. РЎРјРµС‰Р°РµРј X Рё Z СЃС‚СЂРѕРіРѕ РїРѕ РЅР°РїСЂР°РІР»РµРЅРёСЋ РІР·РіР»СЏРґР° РєР°РјРµСЂС‹
-        if (!Mathf.Approximately(newHeight, targetPosition.y))
-        {
-            float heightDelta = newHeight - targetPosition.y;
-
-            // РџРѕР»СѓС‡Р°РµРј РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅС‹Р№ РІРµРєС‚РѕСЂ РЅР°РїСЂР°РІР»РµРЅРёСЏ РєР°РјРµСЂС‹ (РєСѓРґР° РѕРЅР° СЃРјРѕС‚СЂРёС‚ РЅР° РїР»РѕСЃРєРѕСЃС‚Рё XZ)
-            Vector3 forwardXZ = targetRotation * Vector3.forward;
-            forwardXZ.y = 0;
-            forwardXZ.Normalize();
-
-            // РРЎРџР РђР’Р›Р•РќРћ: РњРµРЅСЏРµРј Р·РЅР°Рє heightDelta РЅР° РјРёРЅСѓСЃ (-heightDelta). 
-            // РўРµРїРµСЂСЊ РїСЂРё СѓРјРµРЅСЊС€РµРЅРёРё РІС‹СЃРѕС‚С‹ (РјРёРЅСѓСЃ) РєР°РјРµСЂР° СЃРјРµС‰Р°РµС‚СЃСЏ Р’РџР•Р Р•Р” (РїР»СЋСЃ), 
-            // С‡С‚Рѕ РґР°РµС‚ РёРґРµР°Р»СЊРЅРѕРµ РґРІРёР¶РµРЅРёРµ РІРґРѕР»СЊ РѕСЃРё Z РєР°РјРµСЂС‹ РІРіР»СѓР±СЊ СЌРєСЂР°РЅР°.
-            targetPosition += forwardXZ * (-heightDelta);
-            targetPosition.y = newHeight;
-
-            ClampPosition();
-        }
+        if (!isOrthographicMode) ClampPosition();
     }
-
 
     private void ClampPosition()
     {
         targetPosition.y = Mathf.Clamp(targetPosition.y, minHeight, maxHeight);
         targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
-        // РРЎРџР РђР’Р›Р•РќРћ: РўРµРїРµСЂСЊ РѕРіСЂР°РЅРёС‡РёРІР°РµС‚СЃСЏ РєРѕРѕСЂРґРёРЅР°С‚Р° .z, Р° РЅРµ .y
         targetPosition.z = Mathf.Clamp(targetPosition.z, minBounds.y, maxBounds.y);
     }
 
@@ -229,5 +179,33 @@ public class MapCameraController : MonoBehaviour
     {
         transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * smoothness);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSmoothness);
+    }
+
+    public void SetOrthographicMode(bool enable)
+{
+    isOrthographicMode = enable;
+    lastFrameOrthoMode = isOrthographicMode;
+    ApplyCameraProjection(isOrthographicMode);
+    targetRotation = Quaternion.Euler(isOrthographicMode ? 90f : 45f, targetRotationY, 0f);
+
+   
+}
+
+
+    private void ApplyCameraProjection(bool ortho)
+    {
+        if (cam == null) cam = GetComponent<Camera>();
+        cam.orthographic = ortho;
+
+        if (ortho)
+        {
+            zoomModule.SetTargets(targetPosition.y);
+            cam.orthographicSize = targetPosition.y;
+        }
+        else
+        {
+            zoomModule.SetTargets(cam.orthographicSize);
+            targetPosition.y = cam.orthographicSize;
+        }
     }
 }
