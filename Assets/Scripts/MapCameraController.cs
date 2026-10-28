@@ -7,8 +7,8 @@ public class MapCameraController : MonoBehaviour
     [SerializeField] private InputAction mouseClickAction;
     [SerializeField] private InputAction mousePositionAction;
     [SerializeField] private InputAction mouseScrollAction;
-    [SerializeField] private InputAction rotateClickAction; // Кнопка для зажатия поворота (например, MMB или RMB)
-    [SerializeField] private InputAction mouseDeltaAction;  // Смещение мыши (Value -> Vector2)
+    [SerializeField] private InputAction rotateClickAction;
+    [SerializeField] private InputAction mouseDeltaAction;
 
     [Header("Настройки движения")]
     [SerializeField] private float smoothness = 10f;
@@ -18,7 +18,8 @@ public class MapCameraController : MonoBehaviour
     [SerializeField] private float rotationSmoothness = 5f;
 
     [Header("Настройки зума")]
-    [SerializeField] private float zoomSpeed = 5f;
+    [SerializeField] private float zoomSpeed = 15f; // Немного увеличили для отзывчивости плавного зума
+    [SerializeField] private float zoomSmoothness = 10f; // Плавность приближения
     [SerializeField] private float minHeight = 5f;
     [SerializeField] private float maxHeight = 50f;
     [SerializeField] private LayerMask groundLayer;
@@ -28,10 +29,12 @@ public class MapCameraController : MonoBehaviour
     [SerializeField] private Vector2 maxBounds;
 
     private Vector3 targetPosition;
-    private Quaternion targetRotation; // Целевой поворот для сглаживания
-    private float targetRotationY;     // Текущий целевой угол по Y
-    
+    private Quaternion targetRotation;
+    private float targetRotationY;
+    private float targetHeight; // Целевая высота для плавного зума
+
     private Vector3 dragStartWorldPos;
+    private Vector3 fixedRotationPivot;
     private bool isDragging;
     private bool isRotating;
     private Camera cam;
@@ -46,7 +49,7 @@ public class MapCameraController : MonoBehaviour
 
         mouseClickAction.started += OnDragStarted;
         mouseClickAction.canceled += OnDragCanceled;
-        
+
         rotateClickAction.started += OnRotationStarted;
         rotateClickAction.canceled += OnRotationCanceled;
     }
@@ -55,7 +58,7 @@ public class MapCameraController : MonoBehaviour
     {
         mouseClickAction.started -= OnDragStarted;
         mouseClickAction.canceled -= OnDragCanceled;
-        
+
         rotateClickAction.started -= OnRotationStarted;
         rotateClickAction.canceled -= OnRotationCanceled;
 
@@ -70,12 +73,14 @@ public class MapCameraController : MonoBehaviour
     {
         cam = GetComponent<Camera>();
         targetPosition = transform.position;
+        targetHeight = targetPosition.y; // Инициализируем целевую высоту
         targetRotationY = transform.rotation.eulerAngles.y;
         targetRotation = Quaternion.Euler(45f, targetRotationY, 0f);
-        
+
         transform.rotation = targetRotation;
     }
 
+    // ВАЖНО: Перенесли в Update для плавной обработки мыши и Input System
     void Update()
     {
         HandleZoom();
@@ -86,7 +91,7 @@ public class MapCameraController : MonoBehaviour
 
     private void OnDragStarted(InputAction.CallbackContext context)
     {
-        if (isRotating) return; // Не перетаскиваем во время поворота
+        if (isRotating) return;
 
         Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
         Ray ray = cam.ScreenPointToRay(mousePos);
@@ -106,7 +111,21 @@ public class MapCameraController : MonoBehaviour
     private void OnRotationStarted(InputAction.CallbackContext context)
     {
         isRotating = true;
-        isDragging = false; // Отключаем драг при начале вращения
+        isDragging = false;
+
+        Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        if (Physics.Raycast(centerRay, out RaycastHit hit, Mathf.Infinity, groundLayer))
+        {
+            fixedRotationPivot = hit.point;
+        }
+        else
+        {
+            Plane plane = new Plane(Vector3.up, Vector3.zero);
+            if (plane.Raycast(centerRay, out float enter))
+            {
+                fixedRotationPivot = centerRay.GetPoint(enter);
+            }
+        }
     }
 
     private void OnRotationCanceled(InputAction.CallbackContext context)
@@ -119,12 +138,11 @@ public class MapCameraController : MonoBehaviour
         if (!isDragging || isRotating) return;
 
         Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
-        
-        // Используем текущий целевой поворот (targetRotation) для точного расчета луча без задержек
+
         Matrix4x4 cameraTargetMatrix = Matrix4x4.TRS(targetPosition, targetRotation, transform.localScale);
         Vector3 localRayStart = cam.transform.InverseTransformPoint(cam.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, cam.nearClipPlane)));
         Vector3 localRayDir = cam.transform.InverseTransformDirection(cam.ScreenPointToRay(mousePos).direction);
-        
+
         Vector3 rayStart = cameraTargetMatrix.MultiplyPoint3x4(localRayStart);
         Vector3 rayDir = cameraTargetMatrix.MultiplyVector(localRayDir);
 
@@ -135,7 +153,7 @@ public class MapCameraController : MonoBehaviour
         {
             Vector3 currentMouseWorldPos = ray.GetPoint(enter);
             Vector3 difference = dragStartWorldPos - currentMouseWorldPos;
-            
+
             targetPosition.x += difference.x;
             targetPosition.z += difference.z;
 
@@ -150,72 +168,60 @@ public class MapCameraController : MonoBehaviour
         Vector2 mouseDelta = mouseDeltaAction.ReadValue<Vector2>();
         if (mouseDelta.x == 0) return;
 
-        // 1. Находим точку на земле в центре экрана (pivot вращения)
-        Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Vector3 pivotPoint = Vector3.zero;
+        // 1. Рассчитываем изменение угла, умножая на Time.deltaTime для независимости от FPS.
+        // Увеличьте базовый rotationSpeed в инспекторе (например, до 10-20), так как deltaTime уменьшит значение.
+        float angleDelta = mouseDelta.x * rotationSpeed * Time.deltaTime;
 
-        if (Physics.Raycast(centerRay, out RaycastHit hit, Mathf.Infinity, groundLayer))
-        {
-            pivotPoint = hit.point;
-        }
-        else
-        {
-            // На случай, если центр экрана смотрит в пустоту, берем математическую плоскость y = 0
-            Plane plane = new Plane(Vector3.up, Vector3.zero);
-            if (plane.Raycast(centerRay, out float enter))
-            {
-                pivotPoint = centerRay.GetPoint(enter);
-            }
-        }
-
-        // 2. Рассчитываем новый угол поворота
-        float angleValue = mouseDelta.x * rotationSpeed;
-        targetRotationY += angleValue;
+        targetRotationY += angleDelta;
         targetRotation = Quaternion.Euler(45f, targetRotationY, 0f);
 
-        // 3. Поворачиваем позицию targetPosition вокруг pivotPoint
-        targetPosition = pivotPoint + Quaternion.Euler(0f, angleValue, 0f) * (targetPosition - pivotPoint);
-        
+        // 2. Поворачиваем целевую позицию вокруг статичного пивота
+        targetPosition = fixedRotationPivot + Quaternion.Euler(0f, angleDelta, 0f) * (targetPosition - fixedRotationPivot);
+
         ClampPosition();
     }
 
     private void HandleZoom()
     {
         Vector2 scrollValue = mouseScrollAction.ReadValue<Vector2>();
-        if (scrollValue.y == 0) return;
 
-        Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
-        Ray ray = cam.ScreenPointToRay(mousePos);
-
-        if (Physics.Raycast(ray, out RaycastHit hitBeforeZoom, Mathf.Infinity, groundLayer))
+        // 1. Изменяем целевую высоту
+        if (scrollValue.y != 0)
         {
-            Vector3 worldTargetPos = hitBeforeZoom.point;
-
             float zoomDirection = -Mathf.Sign(scrollValue.y);
-            // Направление зума теперь зависит от текущего разворота камеры
-            Vector3 zoomVector = targetRotation * Vector3.forward * (zoomDirection * zoomSpeed);
+            targetHeight += zoomDirection * zoomSpeed;
+            targetHeight = Mathf.Clamp(targetHeight, minHeight, maxHeight);
+        }
 
-            Vector3 nextTargetPos = targetPosition + zoomVector;
-            nextTargetPos.y = Mathf.Clamp(nextTargetPos.y, minHeight, maxHeight);
+        // 2. Плавно интерполируем высоту
+        float newHeight = Mathf.Lerp(targetPosition.y, targetHeight, Time.deltaTime * zoomSmoothness);
 
-            if (Mathf.Approximately(nextTargetPos.y, targetPosition.y)) return;
+        // 3. Смещаем X и Z строго по направлению взгляда камеры
+        if (!Mathf.Approximately(newHeight, targetPosition.y))
+        {
+            float heightDelta = newHeight - targetPosition.y;
 
-            float currentYDist = targetPosition.y - worldTargetPos.y;
-            float nextYDist = nextTargetPos.y - worldTargetPos.y;
-            float scaleFactor = nextYDist / currentYDist;
+            // Получаем горизонтальный вектор направления камеры (куда она смотрит на плоскости XZ)
+            Vector3 forwardXZ = targetRotation * Vector3.forward;
+            forwardXZ.y = 0;
+            forwardXZ.Normalize();
 
-            targetPosition.x = worldTargetPos.x + (targetPosition.x - worldTargetPos.x) * scaleFactor;
-            targetPosition.z = worldTargetPos.z + (targetPosition.z - worldTargetPos.z) * scaleFactor;
-            targetPosition.y = nextTargetPos.y;
+            // ИСПРАВЛЕНО: Меняем знак heightDelta на минус (-heightDelta). 
+            // Теперь при уменьшении высоты (минус) камера смещается ВПЕРЕД (плюс), 
+            // что дает идеальное движение вдоль оси Z камеры вглубь экрана.
+            targetPosition += forwardXZ * (-heightDelta);
+            targetPosition.y = newHeight;
 
             ClampPosition();
         }
     }
 
+
     private void ClampPosition()
     {
         targetPosition.y = Mathf.Clamp(targetPosition.y, minHeight, maxHeight);
         targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
+        // ИСПРАВЛЕНО: Теперь ограничивается координата .z, а не .y
         targetPosition.z = Mathf.Clamp(targetPosition.z, minBounds.y, maxBounds.y);
     }
 

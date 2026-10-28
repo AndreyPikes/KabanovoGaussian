@@ -20,8 +20,10 @@ public class DataManager : MonoBehaviour
     private void Start()
     {
         saveButton.onClick.AddListener(OnSaveClick);
+        
+        savePath = Path.Combine(Application.streamingAssetsPath, "savefile.json");
 
-        savePath = Path.Combine(Application.persistentDataPath, "savefile.json");
+        Debug.LogError(savePath);
     }
 
     private void OnSaveClick()
@@ -49,12 +51,5 @@ public class DataManager : MonoBehaviour
         Debug.Log(currentObjectsList.Count);
         Debug.Log(savePath);
         Debug.Log(json);
-
-#if UNITY_EDITOR_OSX
-    // Откроет Finder прямо с папкой сохранения при запуске игры в редакторе
-    System.Diagnostics.Process.Start("open", Application.persistentDataPath);
-#endif
-    }
-
-    
+    }    
 }

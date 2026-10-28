@@ -1,0 +1,96 @@
+{
+    "objects": [
+        {
+            "Position": {
+                "x": -8.0,
+                "y": 0.5,
+                "z": 0.0
+            },
+            "Scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "ColliderType": 0,
+            "ObjectType": 2,
+            "Name": "1",
+            "Description": "111",
+            "Year": 11
+        },
+        {
+            "Position": {
+                "x": 0.0,
+                "y": 0.5,
+                "z": 0.0
+            },
+            "Scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "ColliderType": 0,
+            "ObjectType": 3,
+            "Name": "2",
+            "Description": "22222",
+            "Year": 22
+        },
+        {
+            "Position": {
+                "x": 0.0,
+                "y": 0.5,
+                "z": 8.0
+            },
+            "Scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "ColliderType": 0,
+            "ObjectType": 4,
+            "Name": "3",
+            "Description": "333333",
+            "Year": 0
+        },
+        {
+            "Position": {
+                "x": 6.0,
+                "y": 0.5,
+                "z": -6.0
+            },
+            "Scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "Rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0,
+                "w": 1.0
+            },
+            "ColliderType": 0,
+            "ObjectType": 5,
+            "Name": "4",
+            "Description": "4444444",
+            "Year": 0
+        }
+    ]
+}
