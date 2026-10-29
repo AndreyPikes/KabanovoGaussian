@@ -1,21 +1,16 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class SelectableObject : MonoBehaviour
 {
-    [SerializeField] private Vector3 uiOffset = new Vector3(0, 2f, 0);
+    private InteractiveObjectDto interactiveObject;
 
-    [SerializeField] private InteractiveObjectDto interactiveObject;
+    // Событие, которое сообщает, что этот объект изменил свои параметры
+    public static event Action OnObjectChanged;
 
     public string ObjectName => interactiveObject.Name;
     public string Description => interactiveObject.Description;
-
-    public void Initialize(InteractiveObjectDto loadedData)
-    {
-        // Глубокое или поверхностное копирование данных в зависимоcти от логики.
-        // Так как это класс, просто присваиваем ссылку:
-        this.interactiveObject = loadedData;
-    }
 
     public InteractiveObjectDto UpdateAndGetInteractiveObject()
     {
@@ -24,5 +19,15 @@ public class SelectableObject : MonoBehaviour
         interactiveObject.Rotation = transform.rotation;
 
         return interactiveObject;
+    }
+
+    public void Initialize(InteractiveObjectDto loadedData)
+    {
+        this.interactiveObject = loadedData;
+    }
+
+    public void TriggerChanged()
+    {
+        OnObjectChanged?.Invoke();
     }
 }

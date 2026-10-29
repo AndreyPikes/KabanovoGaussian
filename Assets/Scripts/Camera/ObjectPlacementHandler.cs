@@ -7,11 +7,11 @@ public class ObjectPlacementHandler
     private readonly LayerMask _interactableLayer;
     private readonly LayerMask _groundLayer;
 
-    private SelectableObject _draggedObject;
+    private SelectableObject draggedObject;
     private Plane _dragPlane;
     private Vector3 _cursorOffset;
 
-    public bool IsDraggingObject => _draggedObject != null;
+    public bool IsDraggingObject => draggedObject != null;
 
     public ObjectPlacementHandler(Camera cam, LayerMask interactableLayer, LayerMask groundLayer)
     {
@@ -32,17 +32,17 @@ public class ObjectPlacementHandler
             SelectableObject selectable = hit.collider.GetComponent<SelectableObject>();
             if (selectable != null)
             {
-                _draggedObject = selectable;
+                draggedObject = selectable;
 
                 // Создаем математическую плоскость на высоте объекта, параллельно земле (Y)
-                _dragPlane = new Plane(Vector3.up, _draggedObject.transform.position);
+                _dragPlane = new Plane(Vector3.up, draggedObject.transform.position);
 
                 // Находим точку пересечения луча с этой плоскостью для расчета смещения курсора
                 if (_dragPlane.Raycast(ray, out float enter))
                 {
                     Vector3 hitPoint = ray.GetPoint(enter);
                     // Запоминаем, в какое именно место объекта мы кликнули, чтобы он не прыгал центром в курсор
-                    _cursorOffset = _draggedObject.transform.position - hitPoint;
+                    _cursorOffset = draggedObject.transform.position - hitPoint;
                 }
                 return true;
             }
@@ -53,7 +53,7 @@ public class ObjectPlacementHandler
     // Обновляем позицию объекта каждый кадр
     public void DragObject(Vector2 mousePosition)
     {
-        if (_draggedObject == null) return;
+        if (draggedObject == null) return;
 
         Ray ray = _cam.ScreenPointToRay(mousePosition);
         if (_dragPlane.Raycast(ray, out float enter))
@@ -62,18 +62,22 @@ public class ObjectPlacementHandler
             Vector3 newPosition = targetPoint + _cursorOffset;
 
             // Фиксируем координату Y, меняем только X и Z
-            newPosition.y = _draggedObject.transform.position.y;
+            newPosition.y = draggedObject.transform.position.y;
 
-            _draggedObject.transform.position = newPosition;
+            draggedObject.transform.position = newPosition;
 
             // Принудительно обновляем внутренние данные InteractiveObject для последующего сохранения
-            _draggedObject.UpdateAndGetInteractiveObject();
+            draggedObject.UpdateAndGetInteractiveObject();
         }
     }
 
-    // Сбрасываем перетаскивание
     public void StopDrag()
     {
-        _draggedObject = null;
+        if (draggedObject != null)
+        {
+            draggedObject.TriggerChanged();
+        }
+
+        draggedObject = null;
     }
 }
