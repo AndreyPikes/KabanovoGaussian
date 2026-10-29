@@ -1,55 +1,59 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
-using System.IO;
 
 [System.Serializable]
 public class SerializationWrapper
 {
-    public List<InteractiveObject> objects;
+    public List<InteractiveObjectDto> objects;
 }
 
-public class DataManager : MonoBehaviour
+public interface IDataManager
 {
-    [SerializeField] private Transform objectsContainer;
-    [SerializeField] private Button saveButton;
-    private string savePath;
+    void Save(List<InteractiveObjectDto> data);
+    List<InteractiveObjectDto> Load();
+}
 
-    private List<InteractiveObject> currentObjectsList;
 
-    private void Start()
+public class DataManager : IDataManager
+{
+    private readonly string _savePath;
+
+    public DataManager()
     {
-        saveButton.onClick.AddListener(OnSaveClick);
-        
-        savePath = Path.Combine(Application.streamingAssetsPath, "savefile.json");
-
-        Debug.LogError(savePath);
+        _savePath = Path.Combine(Application.streamingAssetsPath, "savefile.json");
     }
 
-    private void OnSaveClick()
+    public void Save(List<InteractiveObjectDto> data)
     {
-        var containerChilds = objectsContainer.GetComponentsInChildren<SelectableObject>();
-        currentObjectsList  = new();
-        foreach (var obj in containerChilds)
-        {
-            currentObjectsList.Add(obj.UpdateAndGetInteractiveObject());
-        }
+        if (data == null) return;
 
-        foreach (var obj in currentObjectsList)
-        {
-            Debug.LogWarning(obj.Description);
-        }
-
-        // Создаем объект обертки и передаем туда ваш список
-        SerializationWrapper wrapper = new SerializationWrapper { objects = currentObjectsList };
-
-        // Сериализуем обертку вместо самого списка
+        SerializationWrapper wrapper = new SerializationWrapper { objects = data };
         string json = JsonUtility.ToJson(wrapper, true);
 
-        // 5. Записываем строку в файл на диск
-        File.WriteAllText(savePath, json);
-        Debug.Log(currentObjectsList.Count);
-        Debug.Log(savePath);
-        Debug.Log(json);
-    }    
+        string directory = Path.GetDirectoryName(_savePath);
+        if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
+        File.WriteAllText(_savePath, json);
+        Debug.Log("[DataManager] Данные успешно сохранены.");
+    }
+
+    public List<InteractiveObjectDto> Load()
+    {
+        if (!File.Exists(_savePath))
+        {
+            Debug.LogWarning($"[DataManager] Файл сохранения не найден: {_savePath}");
+            return null;
+        }
+
+        string json = File.ReadAllText(_savePath);
+        SerializationWrapper wrapper = JsonUtility.FromJson<SerializationWrapper>(json);
+
+        return wrapper?.objects;
+    }
 }
+
+
+

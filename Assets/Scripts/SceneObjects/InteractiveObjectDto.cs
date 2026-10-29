@@ -21,7 +21,7 @@ public enum ObjectType
 }
 
 [Serializable]
-public class InteractiveObject
+public class InteractiveObjectDto
 {
     public Vector3 Position;
     public Vector3 Scale;

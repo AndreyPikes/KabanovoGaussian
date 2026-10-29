@@ -5,18 +5,19 @@ public class SelectableObject : MonoBehaviour
 {
     [SerializeField] private Vector3 uiOffset = new Vector3(0, 2f, 0);
 
-    [SerializeField] private InteractiveObject interactiveObject;
+    [SerializeField] private InteractiveObjectDto interactiveObject;
 
     public string ObjectName => interactiveObject.Name;
     public string Description => interactiveObject.Description;
 
-    // Р’РѕР·РІСЂР°С‰Р°РµС‚ РїРѕР·РёС†РёСЋ РЅР°Рґ РѕР±СЉРµРєС‚РѕРј РІ РјРёСЂРѕРІС‹С… РєРѕРѕСЂРґРёРЅР°С‚Р°С…
-    public Vector3 GetTooltipWorldPosition()
+    public void Initialize(InteractiveObjectDto loadedData)
     {
-        return transform.position + uiOffset;
+        // Глубокое или поверхностное копирование данных в зависимоcти от логики.
+        // Так как это класс, просто присваиваем ссылку:
+        this.interactiveObject = loadedData;
     }
 
-    public InteractiveObject UpdateAndGetInteractiveObject()
+    public InteractiveObjectDto UpdateAndGetInteractiveObject()
     {
         interactiveObject.Position = transform.position;
         interactiveObject.Scale = transform.localScale;
