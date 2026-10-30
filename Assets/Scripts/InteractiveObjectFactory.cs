@@ -10,7 +10,7 @@ public class InteractiveObjectFactory : IInteractiveObjectFactory
 {
     public SelectableObject Create(InteractiveObjectDto dto, Transform parent)
     {
-        string prefabName = dto.ObjectType.ToString();
+        string prefabName = dto.Family.ToString();
         SelectableObject prefab = Resources.Load<SelectableObject>($"Prefabs/{prefabName}");
 
         if (prefab == null)
@@ -19,7 +19,7 @@ public class InteractiveObjectFactory : IInteractiveObjectFactory
             return null;
         }
         
-        SelectableObject instance = Object.Instantiate(prefab, dto.Position, dto.Rotation, parent);
+        SelectableObject instance = Object.Instantiate(prefab, dto.Position, Quaternion.Euler(dto.Rotation), parent);
         instance.transform.localScale = dto.Scale;
         instance.Initialize(dto);
 

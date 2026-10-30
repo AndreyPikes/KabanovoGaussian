@@ -1,5 +1,6 @@
 {
-    "objects": [
+    "Date": "30.10.2026 23:36:56",
+    "Objects": [
         {
             "Position": {
                 "x": 2.0734598636627199,
@@ -14,19 +15,19 @@
             "Rotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.0
             },
-            "ObjectType": 2,
-            "Name": "1",
-            "Description": "111",
-            "Year": 11
+            "Type": 0,
+            "Family": 0,
+            "PlantingYear": 0,
+            "Ripening": 0,
+            "Features": ""
         },
         {
             "Position": {
-                "x": -5.7379350662231449,
+                "x": -4.6384453773498539,
                 "y": 0.5,
-                "z": -3.1050195693969728
+                "z": 0.33966147899627688
             },
             "Scale": {
                 "x": 1.0,
@@ -36,13 +37,13 @@
             "Rotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.0
             },
-            "ObjectType": 3,
-            "Name": "2",
-            "Description": "22222",
-            "Year": 22
+            "Type": 0,
+            "Family": 0,
+            "PlantingYear": 0,
+            "Ripening": 0,
+            "Features": ""
         },
         {
             "Position": {
@@ -58,19 +59,19 @@
             "Rotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.0
             },
-            "ObjectType": 4,
-            "Name": "3",
-            "Description": "333333",
-            "Year": 0
+            "Type": 0,
+            "Family": 0,
+            "PlantingYear": 0,
+            "Ripening": 0,
+            "Features": ""
         },
         {
             "Position": {
-                "x": -5.697574615478516,
+                "x": 2.067013740539551,
                 "y": 0.5,
-                "z": 1.9542765617370606
+                "z": -1.3181030750274659
             },
             "Scale": {
                 "x": 1.0,
@@ -80,13 +81,13 @@
             "Rotation": {
                 "x": 0.0,
                 "y": 0.0,
-                "z": 0.0,
-                "w": 1.0
+                "z": 0.0
             },
-            "ObjectType": 5,
-            "Name": "4",
-            "Description": "4444444",
-            "Year": 0
+            "Type": 0,
+            "Family": 0,
+            "PlantingYear": 0,
+            "Ripening": 0,
+            "Features": ""
         }
     ]
 }

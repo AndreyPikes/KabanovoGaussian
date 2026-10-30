@@ -1,12 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-
-[System.Serializable]
-public class SerializationWrapper
-{
-    public List<InteractiveObjectDto> objects;
-}
 
 public interface IDataManager
 {
@@ -28,7 +23,7 @@ public class DataManager : IDataManager
     {
         if (data == null) return;
 
-        SerializationWrapper wrapper = new SerializationWrapper { objects = data };
+        SerializationWrapper wrapper = new SerializationWrapper { Objects = data, Date = DateTime.Now.ToString() };
         string json = JsonUtility.ToJson(wrapper, true);
 
         string directory = Path.GetDirectoryName(_savePath);
@@ -49,7 +44,7 @@ public class DataManager : IDataManager
         string json = File.ReadAllText(_savePath);
         SerializationWrapper wrapper = JsonUtility.FromJson<SerializationWrapper>(json);
 
-        return wrapper?.objects;
+        return wrapper?.Objects;
     }
 }
 

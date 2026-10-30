@@ -1,26 +1,55 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 
-[Serializable]
 public enum ObjectType
 {
-    NotSet,
-    Tree,
-    Bush,
-    Flower,
-    Engeneering,
-    Building
+    Не_задано,
+    Дерево,
+    Куст,
+    Грядка
 }
 
-[Serializable]
+public enum PlantFamily
+{
+    Не_задано,
+    Яблоня,
+    Груша,
+    Слива,
+    Абрикос,
+    Вишня,
+    Смородина_черная,
+    Смородина_красная,
+    Смородина_белая,
+    Крыжовник,
+    Жимолость,
+    Ежевика,
+    Малина
+}
+
+public enum RipeningPeriod
+{
+    Не_задано,
+    Ранний,
+    Средний,
+    Поздний
+}
+
+[System.Serializable]
+public class SerializationWrapper
+{
+    public string Date;
+    public List<InteractiveObjectDto> Objects;
+}
+
+[System.Serializable]
 public class InteractiveObjectDto
 {
     public Vector3 Position;
     public Vector3 Scale;
-    public Quaternion Rotation;
-    public ObjectType ObjectType;
-    public string Name;
-    [TextArea]
-    public string Description;
-    public int Year;
+    public Vector3 Rotation;
+    public ObjectType Type;
+    public PlantFamily Family;
+    public int PlantingYear;
+    public RipeningPeriod Ripening;
+    public string Features;
 }
