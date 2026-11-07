@@ -126,7 +126,7 @@ public class MapCameraController : MonoBehaviour
         Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
 
         // 1. Проверяем, пытаемся ли мы перетащить объект с зажатым Ctrl
-        if (objectPlacementModule.TryStartDrag(mousePos))
+        if (objectPlacementModule.TryProcessClick(mousePos))
         {
             isDragging = false; // Отключаем drag камеры
             return;

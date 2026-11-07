@@ -47,9 +47,24 @@ public class InteractiveObjectDto
     public Vector3 Position;
     public Vector3 Scale;
     public Vector3 Rotation;
+    /// <summary>
+    /// Разновидность
+    /// </summary>
     public ObjectType Type;
+    /// <summary>
+    /// Семейство
+    /// </summary>
     public PlantFamily Family;
+    /// <summary>
+    /// Год посадки
+    /// </summary>
     public int PlantingYear;
+    /// <summary>
+    /// Сроки созревания
+    /// </summary>
     public RipeningPeriod Ripening;
+    /// <summary>
+    /// Особенности
+    /// </summary>
     public string Features;
 }

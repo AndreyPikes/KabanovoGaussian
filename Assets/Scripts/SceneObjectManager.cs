@@ -1,14 +1,17 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class SceneObjectManager : MonoBehaviour
 {
-    [SerializeField] private Button saveButton;
     [SerializeField] private Transform objectsContainer;
+
+    // Событие, которое сообщает UI (и кому угодно), что объект был выбран
+    public event Action<SelectableObject> OnObjectSelected;
 
     private IDataManager dataManager;
     private IInteractiveObjectFactory objectFactory;
+    private SelectableObject selectedObject; // Текущий выделенный объект
 
     private void Awake()
     {
@@ -32,10 +35,16 @@ public class SceneObjectManager : MonoBehaviour
         OnLoadPressed();
     }
 
+    // Метод для установки текущего активного объекта
+    private void SelectObject(SelectableObject obj)
+    {
+        selectedObject = obj;
+        OnObjectSelected?.Invoke(selectedObject);
+    }
+
     private void AutoSave()
     {        
         dataManager.Save(GatherObjectsData());
-        Debug.Log("[SceneObjectManager] Автосохранение выполнено успешно.");
     }
 
     private void OnLoadPressed()
@@ -52,8 +61,10 @@ public class SceneObjectManager : MonoBehaviour
 
         foreach (var dto in loadedData)
         {
-            objectFactory.Create(dto, objectsContainer);
+            // Передаем метод SelectObject как делегат прямо в фабрику
+            objectFactory.Create(dto, objectsContainer, SelectObject);
         }
+
 
         Debug.Log($"[SceneObjectManager] Успешно спавнуто объектов: {loadedData.Count}");
     }
@@ -73,6 +84,9 @@ public class SceneObjectManager : MonoBehaviour
 
     private void ClearContainer()
     {
+        selectedObject = null;
+        OnObjectSelected?.Invoke(null); // Оповещаем UI, что выбор сброшен
+
         foreach (Transform child in objectsContainer)
         {
             Destroy(child.gameObject);

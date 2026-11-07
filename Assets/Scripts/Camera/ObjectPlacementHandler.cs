@@ -20,37 +20,41 @@ public class ObjectPlacementHandler
         _groundLayer = groundLayer;
     }
 
-    // Проверяем, зажали ли мы Ctrl и попали ли по объекту
-    public bool TryStartDrag(Vector2 mousePosition)
+    // Изменяем метод: теперь он обрабатывает ЛЮБОЙ клик по объекту
+    public bool TryProcessClick(Vector2 mousePosition)
     {
-        // Проверяем нажатие клавиатурного Ctrl через New Input System
-        if (!Keyboard.current.ctrlKey.isPressed) return false;
-
         Ray ray = _cam.ScreenPointToRay(mousePosition);
+
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _interactableLayer))
         {
             SelectableObject selectable = hit.collider.GetComponent<SelectableObject>();
             if (selectable != null)
             {
-                draggedObject = selectable;
-
-                // Создаем математическую плоскость на высоте объекта, параллельно земле (Y)
-                _dragPlane = new Plane(Vector3.up, draggedObject.transform.position);
-
-                // Находим точку пересечения луча с этой плоскостью для расчета смещения курсора
-                if (_dragPlane.Raycast(ray, out float enter))
+                // СЦЕНАРИЙ 1: Зажат Ctrl -> Начинаем перетаскивание
+                if (Keyboard.current.ctrlKey.isPressed)
                 {
-                    Vector3 hitPoint = ray.GetPoint(enter);
-                    // Запоминаем, в какое именно место объекта мы кликнули, чтобы он не прыгал центром в курсор
-                    _cursorOffset = draggedObject.transform.position - hitPoint;
+                    draggedObject = selectable;
+                    _dragPlane = new Plane(Vector3.up, draggedObject.transform.position);
+
+                    if (_dragPlane.Raycast(ray, out float enter))
+                    {
+                        Vector3 hitPoint = ray.GetPoint(enter);
+                        _cursorOffset = draggedObject.transform.position - hitPoint;
+                    }
+                    return true; // Возвращаем true, так как начался Drag
                 }
-                return true;
+                // СЦЕНАРИЙ 2: Ctrl НЕ зажат -> Это обычный клик для выделения
+                else
+                {
+                    selectable.Select(); // Мгновенно выделяет объект и обновляет UI
+                    return false; // Drag не начался
+                }
             }
         }
         return false;
     }
 
-    // Обновляем позицию объекта каждый кадр
+    // Обновляем позицию объекта каждый кадр (остается без изменений)
     public void DragObject(Vector2 mousePosition)
     {
         if (draggedObject == null) return;
@@ -61,12 +65,9 @@ public class ObjectPlacementHandler
             Vector3 targetPoint = ray.GetPoint(enter);
             Vector3 newPosition = targetPoint + _cursorOffset;
 
-            // Фиксируем координату Y, меняем только X и Z
             newPosition.y = draggedObject.transform.position.y;
-
             draggedObject.transform.position = newPosition;
 
-            // Принудительно обновляем внутренние данные InteractiveObject для последующего сохранения
             draggedObject.UpdateAndGetInteractiveObject();
         }
     }
