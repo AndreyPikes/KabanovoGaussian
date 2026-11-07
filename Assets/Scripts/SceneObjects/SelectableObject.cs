@@ -8,6 +8,7 @@ public class SelectableObject : MonoBehaviour
     private Action<SelectableObject> OnSelectAction;
 
     public static event Action OnObjectChanged;
+    public static event Action OnDeselect;
 
     public string ObjectName => interactiveObject.Family.ToString();
     public string Description => interactiveObject.Type.ToString();
@@ -36,5 +37,10 @@ public class SelectableObject : MonoBehaviour
     public void Select()
     {
         OnSelectAction?.Invoke(this);
+    }
+
+    public void Deselect()
+    {
+        OnDeselect?.Invoke();
     }
 }

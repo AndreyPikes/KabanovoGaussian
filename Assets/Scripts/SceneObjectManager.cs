@@ -23,16 +23,23 @@ public class SceneObjectManager : MonoBehaviour
     {
         // Подписываемся на событие изменения ЛЮБОГО объекта
         SelectableObject.OnObjectChanged += AutoSave;
+        SelectableObject.OnDeselect += DeselectObject;
     }
 
     private void OnDisable()
     {
         SelectableObject.OnObjectChanged -= AutoSave;
+        SelectableObject.OnDeselect -= DeselectObject;
     }
 
     private void Start()
     {
         OnLoadPressed();
+    }
+
+    private void DeselectObject()
+    {
+        SelectObject(null);
     }
 
     // Метод для установки текущего активного объекта

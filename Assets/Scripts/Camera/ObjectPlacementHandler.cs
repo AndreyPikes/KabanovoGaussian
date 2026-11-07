@@ -3,64 +3,77 @@ using UnityEngine.InputSystem;
 
 public class ObjectPlacementHandler
 {
-    private readonly Camera _cam;
-    private readonly LayerMask _interactableLayer;
-    private readonly LayerMask _groundLayer;
+    private readonly Camera cam;
+    private readonly LayerMask interactableLayer;
+    private readonly LayerMask groundLayer;
 
     private SelectableObject draggedObject;
-    private Plane _dragPlane;
+    private Plane dragPlane;
     private Vector3 _cursorOffset;
+    private SelectableObject lastSelectedObject;
 
     public bool IsDraggingObject => draggedObject != null;
 
+    // Добавляем SceneObjectManager в конструктор
     public ObjectPlacementHandler(Camera cam, LayerMask interactableLayer, LayerMask groundLayer)
     {
-        _cam = cam;
-        _interactableLayer = interactableLayer;
-        _groundLayer = groundLayer;
+        this.cam = cam;
+        this.interactableLayer = interactableLayer;
+        this.groundLayer = groundLayer;
     }
 
-    // Изменяем метод: теперь он обрабатывает ЛЮБОЙ клик по объекту
     public bool TryProcessClick(Vector2 mousePosition)
     {
-        Ray ray = _cam.ScreenPointToRay(mousePosition);
+        Ray ray = cam.ScreenPointToRay(mousePosition);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _interactableLayer))
+        // 1. Проверяем попадание по интерактивному объекту
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, interactableLayer))
         {
             SelectableObject selectable = hit.collider.GetComponent<SelectableObject>();
             if (selectable != null)
             {
-                // СЦЕНАРИЙ 1: Зажат Ctrl -> Начинаем перетаскивание
+                lastSelectedObject = selectable;
+                // Режим Drag (с зажатым Ctrl)
                 if (Keyboard.current.ctrlKey.isPressed)
                 {
                     draggedObject = selectable;
-                    _dragPlane = new Plane(Vector3.up, draggedObject.transform.position);
+                    dragPlane = new Plane(Vector3.up, draggedObject.transform.position);
 
-                    if (_dragPlane.Raycast(ray, out float enter))
+                    if (dragPlane.Raycast(ray, out float enter))
                     {
                         Vector3 hitPoint = ray.GetPoint(enter);
                         _cursorOffset = draggedObject.transform.position - hitPoint;
                     }
-                    return true; // Возвращаем true, так как начался Drag
+                    return true;
                 }
-                // СЦЕНАРИЙ 2: Ctrl НЕ зажат -> Это обычный клик для выделения
+                // Режим Выделения (обычный клик)
                 else
                 {
-                    selectable.Select(); // Мгновенно выделяет объект и обновляет UI
-                    return false; // Drag не начался
+                    selectable.Select();
+                    return false;
                 }
             }
         }
+
+        // 2. ЕСЛИ МИМО: Если мы попали в землю ИЛИ вообще никуда не попали (промах в небо)
+        // При этом Ctrl не должен быть зажат (чтобы случайно не сбрасывать при перетаскивании)
+        if (!Keyboard.current.ctrlKey.isPressed)
+        {
+            if (lastSelectedObject != null)
+            {
+                lastSelectedObject.Deselect(); // Вызываем метод снятия выделения
+            }
+        }
+
         return false;
     }
 
-    // Обновляем позицию объекта каждый кадр (остается без изменений)
     public void DragObject(Vector2 mousePosition)
     {
         if (draggedObject == null) return;
 
-        Ray ray = _cam.ScreenPointToRay(mousePosition);
-        if (_dragPlane.Raycast(ray, out float enter))
+        Ray ray = cam.ScreenPointToRay(mousePosition);
+        if (dragPlane.Raycast(ray, out float enter))
         {
             Vector3 targetPoint = ray.GetPoint(enter);
             Vector3 newPosition = targetPoint + _cursorOffset;
