@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 public class SceneObjectManager : MonoBehaviour
@@ -47,6 +48,63 @@ public class SceneObjectManager : MonoBehaviour
     {
         selectedObject = obj;
         OnObjectSelected?.Invoke(selectedObject);
+    }
+
+    public void AddNewObject()
+    {
+        // Получаем главную камеру сцены
+        Camera mainCamera = Camera.main;
+        Vector3 localSpawnPosition = Vector3.zero;
+
+        if (mainCamera != null)
+        {
+            // Создаем луч из центра экрана камеры вперед
+            Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+            // Пытаемся найти точку пересечения с поверхностью (например, с землей)
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
+            {                
+                localSpawnPosition = objectsContainer.InverseTransformPoint(hit.point);
+                Debug.LogError(localSpawnPosition.ToString());
+            }            
+        }
+        else
+        {
+            Debug.LogWarning("[SceneObjectManager] Главная камера (Camera.main) не найдена! Объект заспавнен в (0,0,0).");
+        }
+
+
+        InteractiveObjectDto newDto = new InteractiveObjectDto
+        {
+            Position = new Vector3(localSpawnPosition.x, 0.5f, localSpawnPosition.z), // Или выберите позицию перед камерой / по центру
+            Scale = Vector3.one,
+            Rotation = Vector3.zero,
+            Type = ObjectType.Не_задано,
+            Family = PlantFamily.Не_задано,
+            Ripening = RipeningPeriod.Не_задано,
+            Sort = "Сорт",
+            PlantingYear = 2000,
+            Features = "Особенности"
+        };
+
+        SelectableObject newObj = objectFactory.Create(newDto, objectsContainer, SelectObject);
+        if (newObj != null)
+        {
+            SelectObject(newObj);
+            AutoSave();
+        }
+    }
+
+    public async void DeleteSelectedObject()
+    {
+        if (selectedObject == null) return;
+
+        Destroy(selectedObject.gameObject);
+        SelectObject(null);
+
+        await Task.Delay(100);
+
+        AutoSave();
     }
 
     private void AutoSave()

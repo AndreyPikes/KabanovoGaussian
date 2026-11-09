@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class ObjectPlacementHandler
@@ -55,16 +56,23 @@ public class ObjectPlacementHandler
             }
         }
 
-        // 2. ЕСЛИ МИМО: Если мы попали в землю ИЛИ вообще никуда не попали (промах в небо)
-        // При этом Ctrl не должен быть зажат (чтобы случайно не сбрасывать при перетаскивании)
-        if (!Keyboard.current.ctrlKey.isPressed)
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
-            if (lastSelectedObject != null)
-            {
-                lastSelectedObject.Deselect(); // Вызываем метод снятия выделения
-            }
+            // Если курсор над UI, выходим из метода и игнорируем клик для 3D-сцены
+            return false;
         }
 
+        if (Physics.Raycast(ray, out RaycastHit hitGround, Mathf.Infinity, groundLayer))
+        {
+            if (!Keyboard.current.ctrlKey.isPressed)
+            {
+                if (lastSelectedObject != null)
+                {
+                    lastSelectedObject.Deselect(); // Вызываем метод снятия выделения
+                }
+            }
+        }
+        
         return false;
     }
 
@@ -93,5 +101,5 @@ public class ObjectPlacementHandler
         }
 
         draggedObject = null;
-    }
+    }    
 }

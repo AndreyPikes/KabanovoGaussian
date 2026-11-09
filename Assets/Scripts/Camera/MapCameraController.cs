@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Camera))]
@@ -122,6 +123,11 @@ public class MapCameraController : MonoBehaviour
     private void OnDragStarted(InputAction.CallbackContext context)
     {
         if (isRotating) return;
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            // Если клик пришелся на UI, полностью игнорируем его для логики камеры и объектов
+            return;
+        }
 
         Vector2 mousePos = mousePositionAction.ReadValue<Vector2>();
 

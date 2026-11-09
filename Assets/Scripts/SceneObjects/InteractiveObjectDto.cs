@@ -56,6 +56,10 @@ public class InteractiveObjectDto
     /// </summary>
     public PlantFamily Family;
     /// <summary>
+    /// Сорт
+    /// </summary>
+    public string Sort;
+    /// <summary>
     /// Год посадки
     /// </summary>
     public int PlantingYear;

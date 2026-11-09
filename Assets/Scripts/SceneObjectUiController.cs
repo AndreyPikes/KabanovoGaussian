@@ -1,14 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class SceneObjectUiController : MonoBehaviour
 {
+    [SerializeField] private Button AddObject;
+    [SerializeField] private Button DeleteObject;
     [Header("UI Components")]
     [SerializeField] private CanvasGroup canvas;
     [SerializeField] private TMP_Dropdown typeDropdown;
     [SerializeField] private TMP_Dropdown familyDropdown;
     [SerializeField] private TMP_Dropdown ripeningDropdown;
+    [SerializeField] private TMP_InputField sortInputField;
     [SerializeField] private TMP_InputField yearInputField;
     [SerializeField] private TMP_InputField featuresInputField;
 
@@ -30,6 +34,7 @@ public class SceneObjectUiController : MonoBehaviour
         typeDropdown.onValueChanged.AddListener(OnTypeChanged);
         familyDropdown.onValueChanged.AddListener(OnFamilyChanged);
         ripeningDropdown.onValueChanged.AddListener(OnRipeningChanged);
+        sortInputField.onEndEdit.AddListener(OnSortChanged);
         yearInputField.onEndEdit.AddListener(OnYearChanged);
         featuresInputField.onEndEdit.AddListener(OnFeaturesChanged);
 
@@ -37,6 +42,9 @@ public class SceneObjectUiController : MonoBehaviour
         {
             objectManager.OnObjectSelected += ShowObjectData;
         }
+
+        if (AddObject != null) AddObject.onClick.AddListener(OnAddObjectPressed);
+        if (DeleteObject != null) DeleteObject.onClick.AddListener(OnDeleteObjectPressed);
     }
 
     private void OnDisable()
@@ -44,6 +52,7 @@ public class SceneObjectUiController : MonoBehaviour
         typeDropdown.onValueChanged.RemoveListener(OnTypeChanged);
         familyDropdown.onValueChanged.RemoveListener(OnFamilyChanged);
         ripeningDropdown.onValueChanged.RemoveListener(OnRipeningChanged);
+        sortInputField.onEndEdit.RemoveListener(OnSortChanged);
         yearInputField.onEndEdit.RemoveListener(OnYearChanged);
         featuresInputField.onEndEdit.RemoveListener(OnFeaturesChanged);
 
@@ -51,6 +60,9 @@ public class SceneObjectUiController : MonoBehaviour
         {
             objectManager.OnObjectSelected -= ShowObjectData;
         }
+
+        if (AddObject != null) AddObject.onClick.RemoveListener(OnAddObjectPressed);
+        if (DeleteObject != null) DeleteObject.onClick.RemoveListener(OnDeleteObjectPressed);
     }
 
     private void ShowObjectData(SelectableObject selectedObject)
@@ -69,6 +81,7 @@ public class SceneObjectUiController : MonoBehaviour
         typeDropdown.SetValueWithoutNotify((int)currentDto.Type);
         familyDropdown.SetValueWithoutNotify((int)currentDto.Family);
         ripeningDropdown.SetValueWithoutNotify((int)currentDto.Ripening);
+        sortInputField.SetTextWithoutNotify(currentDto.Sort);
         yearInputField.SetTextWithoutNotify(currentDto.PlantingYear.ToString());
         featuresInputField.SetTextWithoutNotify(currentDto.Features);
 
@@ -76,7 +89,21 @@ public class SceneObjectUiController : MonoBehaviour
         ToggleUiVisibility(true);
     }
 
-    #region UI Listeners
+    private void OnAddObjectPressed()
+    {
+        if (objectManager != null)
+        {
+            objectManager.AddNewObject();
+        }
+    }
+
+    private void OnDeleteObjectPressed()
+    {
+        if (objectManager != null)
+        {
+            objectManager.DeleteSelectedObject();
+        }
+    }
 
     private void OnTypeChanged(int index)
     {
@@ -99,6 +126,13 @@ public class SceneObjectUiController : MonoBehaviour
         currentObject.TriggerChanged();
     }
 
+    private void OnSortChanged(string value)
+    {
+        if (currentObject == null || currentDto == null) return;
+        currentDto.Sort = value;
+        currentObject.TriggerChanged();
+    }
+
     private void OnYearChanged(string value)
     {
         if (currentObject == null || currentDto == null) return;
@@ -115,8 +149,6 @@ public class SceneObjectUiController : MonoBehaviour
         currentDto.Features = value;
         currentObject.TriggerChanged();
     }
-
-    #endregion
 
     // Вспомогательный метод для управления видимостью и кликабельностью CanvasGroup
     private void ToggleUiVisibility(bool isVisible)
@@ -139,6 +171,11 @@ public class SceneObjectUiController : MonoBehaviour
     {
         dropdown.ClearOptions();
         List<string> options = new List<string>(System.Enum.GetNames(typeof(T)));
-        dropdown.AddOptions(options);
+        List<string> optionsWithSpaces = new List<string>(options.Count);
+        foreach (var option in options) 
+        {            
+            optionsWithSpaces.Add(option.Replace("_", " "));
+        }
+        dropdown.AddOptions(optionsWithSpaces);
     }
 }
