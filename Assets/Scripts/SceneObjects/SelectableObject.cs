@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class SelectableObject : MonoBehaviour
 {
+    [SerializeField] private List<GameObject> variants;
     private InteractiveObjectDto interactiveObject;
     private Action<SelectableObject> OnSelectAction;
 
@@ -17,6 +19,18 @@ public class SelectableObject : MonoBehaviour
     {
         this.interactiveObject = loadedData;
         this.OnSelectAction = onSelectAction;
+        UpdateModel();
+    }
+
+    public void UpdateModel()
+    {
+        for (int i = 0; i < variants.Count; i++)
+        {
+            if (i == (int)interactiveObject.Family) variants[i].SetActive(true);
+            else variants[i].SetActive(false);
+        }
+
+        transform.localScale = interactiveObject.Scale;
     }
 
     public InteractiveObjectDto UpdateAndGetInteractiveObject()
@@ -30,6 +44,7 @@ public class SelectableObject : MonoBehaviour
 
     public void TriggerChanged()
     {
+        UpdateModel();
         OnObjectChanged?.Invoke();
     }
 

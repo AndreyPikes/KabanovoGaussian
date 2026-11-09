@@ -73,7 +73,7 @@ public class TooltipManager : MonoBehaviour
     if (tooltipPanel == null) return;
 
     // Конвертируем точную точку на поверхности в экранные координаты
-    Vector3 screenPos = mainCamera.WorldToScreenPoint(hitPoint);
+    Vector3 screenPos = mainCamera.WorldToScreenPoint(hitPoint) - Vector3.up * 100;
 
     if (screenPos.z < 0)
     {

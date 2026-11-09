@@ -2,20 +2,20 @@ using UnityEngine;
 
 public class CameraMovement
 {
-    private readonly Camera _cam;
-    private readonly LayerMask _groundLayer;
+    private readonly Camera cam;
+    private readonly LayerMask groundLayer;
     private Vector3 _dragStartWorldPos;
 
     public CameraMovement(Camera cam, LayerMask groundLayer)
     {
-        _cam = cam;
-        _groundLayer = groundLayer;
+        this.cam = cam;
+        this.groundLayer = groundLayer;
     }
 
     public void StartDrag(Vector2 mousePosition)
     {
-        Ray ray = _cam.ScreenPointToRay(mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _groundLayer))
+        Ray ray = cam.ScreenPointToRay(mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, groundLayer))
         {
             _dragStartWorldPos = hit.point;
         }
@@ -26,8 +26,8 @@ public class CameraMovement
         // Возвращаем целевую матрицу — она гарантирует отсутствие эффекта желе
         Matrix4x4 cameraTargetMatrix = Matrix4x4.TRS(targetPosition, targetRotation, Vector3.one);
 
-        Vector3 localRayStart = _cam.transform.InverseTransformPoint(_cam.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, _cam.nearClipPlane)));
-        Vector3 localRayDir = _cam.transform.InverseTransformDirection(_cam.ScreenPointToRay(mousePosition).direction);
+        Vector3 localRayStart = cam.transform.InverseTransformPoint(cam.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, cam.nearClipPlane)));
+        Vector3 localRayDir = cam.transform.InverseTransformDirection(cam.ScreenPointToRay(mousePosition).direction);
 
         Vector3 rayStart = cameraTargetMatrix.MultiplyPoint3x4(localRayStart);
         Vector3 rayDir = cameraTargetMatrix.MultiplyVector(localRayDir);

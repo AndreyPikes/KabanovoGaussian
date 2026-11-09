@@ -15,6 +15,8 @@ public class SceneObjectUiController : MonoBehaviour
     [SerializeField] private TMP_InputField sortInputField;
     [SerializeField] private TMP_InputField yearInputField;
     [SerializeField] private TMP_InputField featuresInputField;
+    [SerializeField] private Button smaller;
+    [SerializeField] private Button bigger;
 
     private SceneObjectManager objectManager;
     private InteractiveObjectDto currentDto;
@@ -45,6 +47,8 @@ public class SceneObjectUiController : MonoBehaviour
 
         if (AddObject != null) AddObject.onClick.AddListener(OnAddObjectPressed);
         if (DeleteObject != null) DeleteObject.onClick.AddListener(OnDeleteObjectPressed);
+        smaller.onClick.AddListener(SetSmaller);
+        bigger.onClick.AddListener(SetBigger);
     }
 
     private void OnDisable()
@@ -63,6 +67,8 @@ public class SceneObjectUiController : MonoBehaviour
 
         if (AddObject != null) AddObject.onClick.RemoveListener(OnAddObjectPressed);
         if (DeleteObject != null) DeleteObject.onClick.RemoveListener(OnDeleteObjectPressed);
+        smaller.onClick.RemoveListener(SetSmaller);
+        bigger.onClick.RemoveListener(SetBigger);
     }
 
     private void ShowObjectData(SelectableObject selectedObject)
@@ -147,6 +153,18 @@ public class SceneObjectUiController : MonoBehaviour
     {
         if (currentObject == null || currentDto == null) return;
         currentDto.Features = value;
+        currentObject.TriggerChanged();
+    }
+
+    private void SetSmaller()
+    {
+        currentDto.Scale -= Vector3.one * 0.1f;
+        currentObject.TriggerChanged();
+    }
+
+    private void SetBigger()
+    {
+        currentDto.Scale += Vector3.one * 0.1f;
         currentObject.TriggerChanged();
     }
 

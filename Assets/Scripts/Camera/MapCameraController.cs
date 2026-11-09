@@ -125,6 +125,7 @@ public class MapCameraController : MonoBehaviour
         if (isRotating) return;
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
+            Debug.LogError("UI");
             // Если клик пришелся на UI, полностью игнорируем его для логики камеры и объектов
             return;
         }

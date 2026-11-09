@@ -76,15 +76,15 @@ public class SceneObjectManager : MonoBehaviour
 
         InteractiveObjectDto newDto = new InteractiveObjectDto
         {
-            Position = new Vector3(localSpawnPosition.x, 0.5f, localSpawnPosition.z), // Или выберите позицию перед камерой / по центру
+            Position = new Vector3(localSpawnPosition.x, 0f, localSpawnPosition.z), // Или выберите позицию перед камерой / по центру
             Scale = Vector3.one,
             Rotation = Vector3.zero,
             Type = ObjectType.Не_задано,
             Family = PlantFamily.Не_задано,
             Ripening = RipeningPeriod.Не_задано,
-            Sort = "Сорт",
-            PlantingYear = 2000,
-            Features = "Особенности"
+            Sort = "",
+            PlantingYear = 0,
+            Features = ""
         };
 
         SelectableObject newObj = objectFactory.Create(newDto, objectsContainer, SelectObject);

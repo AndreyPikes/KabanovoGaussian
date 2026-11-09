@@ -11,7 +11,7 @@ public class InteractiveObjectFactory : IInteractiveObjectFactory
     public SelectableObject Create(InteractiveObjectDto dto, Transform parent, Action<SelectableObject> onSelectAction)
     {
         string prefabName = dto.Family.ToString();
-        SelectableObject prefab = Resources.Load<SelectableObject>($"Prefabs/Не_задано");
+        SelectableObject prefab = Resources.Load<SelectableObject>($"Prefabs/SelectableObject");
 
         if (prefab == null)
         {
